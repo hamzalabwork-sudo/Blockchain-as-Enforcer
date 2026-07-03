@@ -18,7 +18,14 @@ Real (not simulated) integration with the live PureChain testnet, using the
 |---|---|
 | Deployed TrustLedger contract | `0x5E415aa5F5942f8341BBA1518EA9548F80C34891` |
 | Deployer (throwaway key, zero-gas, unfunded) | `0x16f57d43dA79DA9005DB73B1A91b23fdD225D23a` |
-| Rounds recorded on-chain | 5/5, all finalized, all read back successfully |
+| Largest run | 100/100 real transactions sent, 79 finalized / 21 correctly rejected, 0 verification mismatches |
+
+The 100-transaction run (`python record_consensus_demo.py 100`) sent one
+real transaction per round with a randomized ~85%/15% valid/invalid block
+mix (see "Scripts" below), completing in 251.3s including 18 transient
+nonce-race retries (see below), and every single round's on-chain state was
+read back afterward and confirmed to exactly match what was sent -- 0
+mismatches across all 100.
 
 Sample transaction hashes (round -> tx):
 ```
@@ -27,6 +34,8 @@ Sample transaction hashes (round -> tx):
 3 -> 3fb2b687f220c3ef74af6daa71fe2651486e294f7bd05b9c2b2e6d7be5cfb89e
 4 -> 2c974099129d2e34bb796536ac2258ee8eff9aeb1f67b0da7948f76e36f09788
 5 -> c01839164a51adc964027ad942c2147be52a0ef90ee78465bd516af71c76efa9
+...
+100 -> 4436f5cd34d0d0d8...
 ```
 
 ### The TLS interception issue that had to be resolved first
@@ -66,7 +75,9 @@ causing back-to-back transactions submitted within the same second to
 collide on nonces. Fixed with a short retry-with-backoff around each
 `record_consensus` call (`_record_with_retry` in `record_consensus_demo.py`)
 rather than anything more invasive -- the underlying PoA2 logic and contract
-were correct throughout; this was purely an RPC-timing issue.
+were correct throughout; this was purely an RPC-timing issue. The retry
+logic held up at scale: the 100-transaction run hit this race 18 times and
+recovered cleanly every time (never exceeding 1-2 retries).
 
 ## Signing key handling
 
@@ -94,4 +105,7 @@ actually correspond to the configured `OWNER_ADDRESS`.
 1. `python setup_wallet.py` -- generates the throwaway deployer key (skip if using your own key)
 2. `python test_connection.py` -- read-only connectivity check, no key needed
 3. `python deploy_trust_ledger.py` -- deploys TrustLedger.sol, saves the address
-4. `python record_consensus_demo.py` -- runs 5 real PoA2 rounds, anchors each on-chain, reads them back
+4. `python record_consensus_demo.py [n_rounds]` -- runs `n_rounds` real PoA2 rounds
+   (default 5) with a randomized ~85%/15% valid/invalid block mix, anchors
+   each on-chain, then reads every single one back and verifies it matches
+   exactly what was sent

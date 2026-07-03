@@ -43,8 +43,9 @@ hyperparameter sensitivity, PoA2 scalability) are in `results/`.
 for a genuine (not simulated) integration with the live PureChain testnet
 (`purechainlib` on PyPI, RPC `https://purechainnode.com:8547`, chain ID
 `900520900520`, zero gas fees): a real `TrustLedger.sol` contract deployed
-to the chain, and 5 real PoA² consensus rounds recorded and read back
-on-chain with verifiable transaction hashes. Getting there required
+to the chain, and 100 real PoA² consensus rounds recorded and read back
+on-chain (79 finalized, 21 correctly rejected, 0 verification mismatches
+against what was sent) with verifiable transaction hashes. Getting there required
 diagnosing a local TLS-interception issue (this machine's antivirus was
 re-signing HTTPS traffic with a malformed certificate) — see that folder's
 README for the full diagnosis and resolution (disabling the AV's HTTPS

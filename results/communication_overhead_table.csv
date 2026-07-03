@@ -1,0 +1,7 @@
+Metric,Value
+Avg. Model Size (BiLSTM),8.2 MB
+Upload Size per Round,8.2 MB
+Download Size per Round,8.2 MB
+Total Communication/Round,16.4 MB
+Blockchain Anchoring Delay (Table XII),148 ms
+Total Round Latency (100 clients),780 ms

@@ -1,0 +1,49 @@
+Dataset,Attack Type,Model,Detection Rate (%)
+IoTForge Pro,DoS,CNN,83.78
+IoTForge Pro,DDoS,CNN,79.76
+IoTForge Pro,Password,CNN,77.91
+IoTForge Pro,Ransomware,CNN,88.07
+IoTForge Pro,XSS,CNN,82.89
+IoTForge Pro,Scan,CNN,79.79
+IoTForge Pro,DoS,LSTM,67.57
+IoTForge Pro,DDoS,LSTM,80.95
+IoTForge Pro,Password,LSTM,83.72
+IoTForge Pro,Ransomware,LSTM,79.82
+IoTForge Pro,XSS,LSTM,77.63
+IoTForge Pro,Scan,LSTM,97.87
+IoTForge Pro,DoS,BiLSTM,63.51
+IoTForge Pro,DDoS,BiLSTM,84.52
+IoTForge Pro,Password,BiLSTM,87.21
+IoTForge Pro,Ransomware,BiLSTM,77.06
+IoTForge Pro,XSS,BiLSTM,85.53
+IoTForge Pro,Scan,BiLSTM,93.62
+ToN-IoT,DoS,CNN,80.00
+ToN-IoT,DDoS,CNN,85.22
+ToN-IoT,Ransomware,CNN,88.73
+ToN-IoT,Injection,CNN,87.70
+ToN-IoT,DoS,LSTM,83.48
+ToN-IoT,DDoS,LSTM,82.61
+ToN-IoT,Ransomware,LSTM,85.92
+ToN-IoT,Injection,LSTM,91.80
+ToN-IoT,DoS,BiLSTM,87.83
+ToN-IoT,DDoS,BiLSTM,85.22
+ToN-IoT,Ransomware,BiLSTM,88.03
+ToN-IoT,Injection,BiLSTM,90.98
+IoT-CAD,DoS,CNN,80.00
+IoT-CAD,Recon,CNN,69.57
+IoT-CAD,Exploit,CNN,78.17
+IoT-CAD,Malware,CNN,83.61
+IoT-CAD,DoS,LSTM,71.30
+IoT-CAD,Recon,LSTM,77.39
+IoT-CAD,Exploit,LSTM,71.13
+IoT-CAD,Malware,LSTM,86.07
+IoT-CAD,DoS,BiLSTM,67.83
+IoT-CAD,Recon,BiLSTM,78.26
+IoT-CAD,Exploit,BiLSTM,72.54
+IoT-CAD,Malware,BiLSTM,88.52
+WUSTL-IIoT-2021,DoS,CNN,89.47
+WUSTL-IIoT-2021,DoS-Slow,CNN,95.28
+WUSTL-IIoT-2021,DoS,LSTM,95.22
+WUSTL-IIoT-2021,DoS-Slow,LSTM,98.58
+WUSTL-IIoT-2021,DoS,BiLSTM,94.74
+WUSTL-IIoT-2021,DoS-Slow,BiLSTM,95.75

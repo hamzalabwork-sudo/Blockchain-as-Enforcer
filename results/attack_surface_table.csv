@@ -1,0 +1,7 @@
+Attack Type,Success Rate (No Defense),Success Rate (With PoA2),Defense Mechanism
+Random poisoning,85.0%,15.8%,Trust scoring (Eq. 9)
+Targeted poisoning,72.0%,3.1%,Association threshold (Eq. 14)
+Sybil (fake nodes),100.0%,0.0%,Authority validation (Eq. 11)
+Eclipse (validator takeover),29.3%,0.5%,PBFT-style consensus
+Replay attack,89.4%,0.0%,Hash anchoring (Eq. 19)
+Collusion (clients+validators),25.5%,0.2%,Dual validation (Eq. 15)

@@ -1,0 +1,6 @@
+Aggregation Method,Clean Acc,Poisoned Acc (20%),Drop
+Vanilla FL,96.88%,88.66%,8.21%
+Krum,95.09%,94.55%,0.54%
+Trimmed Mean,96.74%,96.43%,0.31%
+Median,97.05%,96.12%,0.94%
+PoA2,97.14%,97.01%,0.13%

@@ -1,0 +1,6 @@
+Framework,Clean Acc,20% Poison Acc,Drop,"Per-Round Latency (ms, illustrative)"
+Centralized Learning,96.65%,82.81%,13.84%,276.7
+Vanilla FL,97.46%,88.66%,8.79%,213.6
+FL + PoA (only authority),96.74%,96.65%,0.09%,203.1
+FL + Association (only),97.14%,97.10%,0.04%,203.5
+FL + PoA2 (full),97.14%,97.01%,0.13%,204.9

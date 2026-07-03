@@ -1,22 +1,16 @@
-"""Optional real on-chain integration via purechainlib (pip install purechainlib).
+"""Real on-chain integration via purechainlib (pip install purechainlib).
 
-STATUS: written against the real purechainlib 2.1.7 API (verified by reading
-its installed source) but NOT exercised end-to-end in this reproduction --
-connecting to the live testnet (`https://purechainnode.com:8547`) from this
-environment fails TLS certificate verification:
+STATUS: verified working end-to-end against the live PureChain testnet --
+see `On-Chain Real world Deployment/` for the actual run (deployed
+TrustLedger contract, real transaction hashes, on-chain reads confirming
+persistence). Getting there required diagnosing and working around a local
+TLS-interception issue: this machine's antivirus (Avast) was transparently
+re-signing HTTPS traffic with a malformed certificate, which strict
+TLS verification correctly rejected. The fix was disabling the AV's
+HTTPS-scanning shield for testing, not weakening verification in code --
+see that folder's README for the full diagnosis.
 
-    SSLError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed:
-    Basic Constraints of CA cert not marked critical
-
-That's a non-standard CA certificate on the node's side, not a bug here. The
-project owner chose to run PoA2 entirely as a local simulation
-(trustedge.blockchain.poa2_simulator, trustedge.poa2) rather than disable TLS
-verification to work around it. This module is kept for anyone who *can*
-reach the node normally (e.g. from inside the lab network, or once the
-node's certificate is fixed) and wants genuine on-chain verification instead
-of the simulator.
-
-Usage (untested in this environment):
+Usage:
     from trustedge.blockchain.purechain_client import PureChainTrustLedger
     ledger = PureChainTrustLedger()
     await ledger.connect_fresh_account()   # generates a new throwaway keypair locally

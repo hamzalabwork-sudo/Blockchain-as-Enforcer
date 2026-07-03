@@ -38,37 +38,32 @@ hyperparameter sensitivity, PoA2 scalability) are in `results/`.
 
 ## Important: what this reproduction is, and isn't
 
-**No live blockchain calls.** The user has access to a real PureChain
-testnet (`purechainlib` on PyPI, RPC `https://purechainnode.com:8547`,
-chain ID `900520900520`, zero gas fees) and this repo was built specifically
-to use it. In practice, connecting from this environment fails TLS
-certificate verification on the node's side:
-
-```
-SSLError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed:
-Basic Constraints of CA cert not marked critical
-```
-
-That's a non-standard CA certificate on the node, not a bug here. The fix
-(disabling certificate verification for that connection) is a real security
-downgrade, so rather than silently doing that, the project owner was asked
-and chose to run PoA² entirely as a local simulation instead. Concretely:
+**Real on-chain deployment: working, verified live.** See
+[`On-Chain Real world Deployment/`](On-Chain%20Real%20world%20Deployment/)
+for a genuine (not simulated) integration with the live PureChain testnet
+(`purechainlib` on PyPI, RPC `https://purechainnode.com:8547`, chain ID
+`900520900520`, zero gas fees): a real `TrustLedger.sol` contract deployed
+to the chain, and 5 real PoA² consensus rounds recorded and read back
+on-chain with verifiable transaction hashes. Getting there required
+diagnosing a local TLS-interception issue (this machine's antivirus was
+re-signing HTTPS traffic with a malformed certificate) — see that folder's
+README for the full diagnosis and resolution (disabling the AV's HTTPS
+scanning, not weakening TLS verification in code).
 
 - `trustedge/poa2.py` and `trustedge/security_sim.py` implement the actual
-  consensus math (Eq. 11-15) and run it locally -- no network calls.
-- `trustedge/blockchain/purechain_client.py` **is** a working integration
-  written against the real, installed `purechainlib==2.1.7` API (verified by
-  reading its source, not just its PyPI page) plus a `TrustLedger.sol`
-  contract that anchors each round's consensus decision on-chain. It's
-  provided for anyone who *can* reach the node normally (e.g. from inside
-  the lab network) — see the module docstring for usage. It was not
-  exercised end-to-end here.
+  consensus math (Eq. 11-15) and can run it purely locally for the
+  large-scale experiments below -- no network calls needed for those.
+- `trustedge/blockchain/purechain_client.py` is the real integration,
+  written against the installed `purechainlib==2.1.7` API and used by the
+  on-chain deployment above.
 - `trustedge/blockchain/poa2_simulator.py` models consensus latency/TPS at
   scale (10 to 5,000 clients) analytically. This mirrors the paper's *own*
   stated methodology for its large-scale numbers (Sec. IV-A: "PureChain
   consensus and ledger mechanisms were simulated using a custom Python
   class to model the computational overhead") — nobody spins up 5,000 real
-  validators against a live chain for a scalability plot. The model's free
+  validators against a live chain for a scalability plot, and the tables
+  below (Table IV-XI, XIV-XVI) all run their own local FL training loops
+  rather than one blockchain transaction per round. The model's free
   parameters are calibrated directly to the paper's own Table X anchor
   points and interpolated/extrapolated between them.
 
@@ -113,7 +108,7 @@ trustedge/
   datasets/                IoTForge / ToN-IoT / IoT-CAD / WUSTL loaders (synthetic sequence data)
   blockchain/
     poa2_simulator.py        Analytical latency/TPS/scalability model (Table X, XII, XIII)
-    purechain_client.py       Real purechainlib integration (untested here, see above)
+    purechain_client.py       Real purechainlib integration, verified live (see On-Chain Real world Deployment/)
     contracts/TrustLedger.sol On-chain consensus-decision ledger (Solidity)
 experiments/                One script per paper section, producing plots + CSV tables into results/
   run_detection_performance.py     Sec. IV-C: Table IV/V/VI (CNN/LSTM/BiLSTM accuracy, convergence, per-attack recall)

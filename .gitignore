@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 data/raw/
 .env
+
+# Never commit generated wallet keys
+**/.wallet/
+*.key

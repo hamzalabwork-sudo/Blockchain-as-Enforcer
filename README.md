@@ -38,18 +38,28 @@ hyperparameter sensitivity, PoA2 scalability) are in `results/`.
 
 ## Important: what this reproduction is, and isn't
 
-**Real on-chain deployment: working, verified live.** See
+**Real on-chain deployment: working, verified live, covering every
+aggregation method.** See
 [`On-Chain Real world Deployment/`](On-Chain%20Real%20world%20Deployment/)
 for a genuine (not simulated) integration with the live PureChain testnet
 (`purechainlib` on PyPI, RPC `https://purechainnode.com:8547`, chain ID
-`900520900520`, zero gas fees): a real `TrustLedger.sol` contract deployed
-to the chain, and 100 real PoA² consensus rounds recorded and read back
-on-chain (79 finalized, 21 correctly rejected, 0 verification mismatches
-against what was sent) with verifiable transaction hashes. Getting there required
-diagnosing a local TLS-interception issue (this machine's antivirus was
-re-signing HTTPS traffic with a malformed certificate) — see that folder's
-README for the full diagnosis and resolution (disabling the AV's HTTPS
-scanning, not weakening TLS verification in code).
+`900520900520`, zero gas fees): real `TrustLedger.sol` contracts deployed
+to the chain, 100 real PoA² consensus rounds recorded and read back
+on-chain (79 finalized, 21 correctly rejected, 0 verification mismatches),
+and -- closing the gap where only PoA2 initially had a real on-chain proof
+-- a real BiLSTM run of **all eight** Table IX/XVI aggregation methods
+(Centralized, Vanilla FL, Authority-only, Association-only, PoA2, Krum,
+Trimmed Mean, Median) with every method's real per-round outcome anchored
+on-chain (71 transactions, 0 mismatches), reproducing the same "vanilla FL
+is clearly weakest, every defense recovers to near-clean accuracy" pattern
+as the local simulation below, but with each data point independently
+verifiable on a real chain. Getting there required diagnosing a local
+TLS-interception issue (this machine's antivirus was re-signing HTTPS
+traffic with a malformed certificate) and a transient nonce-race condition
+in PureChain's on-demand block production — see that folder's README for
+the full diagnosis and resolution of both (disabling the AV's HTTPS
+scanning rather than weakening TLS verification in code; a retry-with-
+backoff for the nonce race).
 
 - `trustedge/poa2.py` and `trustedge/security_sim.py` implement the actual
   consensus math (Eq. 11-15) and can run it purely locally for the
@@ -62,10 +72,14 @@ scanning, not weakening TLS verification in code).
   stated methodology for its large-scale numbers (Sec. IV-A: "PureChain
   consensus and ledger mechanisms were simulated using a custom Python
   class to model the computational overhead") — nobody spins up 5,000 real
-  validators against a live chain for a scalability plot, and the tables
-  below (Table IV-XI, XIV-XVI) all run their own local FL training loops
-  rather than one blockchain transaction per round. The model's free
-  parameters are calibrated directly to the paper's own Table X anchor
+  validators against a live chain for a scalability plot. The multi-dataset
+  Table IV-XI, XIV-XVI numbers below still come from local runs (four
+  datasets vs. the on-chain run's one, more rounds, several sweeps that
+  don't depend on the blockchain layer at all -- model architecture,
+  non-IID partitioning, hyperparameters); the on-chain run above is a
+  faithful, smaller-scale, single-dataset confirmation of the same
+  aggregation-method comparison, not a replacement for it. The scalability
+  model's free parameters are calibrated directly to the paper's own Table X anchor
   points and interpolated/extrapolated between them.
 
 **No real datasets.** The paper evaluates on four third-party IIoT datasets

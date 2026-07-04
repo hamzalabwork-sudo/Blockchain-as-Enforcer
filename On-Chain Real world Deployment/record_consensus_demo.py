@@ -26,6 +26,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from chain_utils import record_with_retry
 from wallet import resolve_private_key
 
 HERE = Path(__file__).resolve().parent
@@ -34,23 +35,6 @@ DEPLOYED_ADDRESS_FILE = HERE / "deployed_address.txt"
 N_VALIDATORS = 7
 BYZANTINE_FRACTION = 0.2  # under the f < M/3 bound (Assumption / Sec. III-J)
 VALID_BLOCK_PROB = 0.85
-MAX_RETRIES = 5
-RETRY_DELAY_S = 3.0
-
-
-async def _record_with_retry(ledger, **kwargs):
-    """PureChain's on-demand block production can lag behind eth_getTransactionCount
-    ("latest"), causing transient 'nonce too low' errors on rapid successive
-    transactions. Retrying after a short delay lets the node's state catch up."""
-    for attempt in range(1, MAX_RETRIES + 1):
-        try:
-            return await ledger.record_consensus(**kwargs)
-        except Exception as e:
-            if "nonce too low" in str(e) and attempt < MAX_RETRIES:
-                print(f"  (nonce race, retrying in {RETRY_DELAY_S}s -- attempt {attempt}/{MAX_RETRIES})")
-                time.sleep(RETRY_DELAY_S)
-                continue
-            raise
 
 
 async def main(n_rounds: int) -> None:
@@ -97,7 +81,7 @@ async def main(n_rounds: int) -> None:
         result = consensus.run_round(block_is_valid=block_is_valid, rng=rng)
         model_hash = hashlib.sha256(f"round-{round_id}".encode()).digest()
 
-        receipt = await _record_with_retry(
+        receipt = await record_with_retry(
             ledger,
             round=round_id,
             authority_ok=result.authority_ok,

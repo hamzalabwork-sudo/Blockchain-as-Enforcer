@@ -12,13 +12,47 @@ Real (not simulated) integration with the live PureChain testnet, using the
 | Currency | PCC (zero gas fees on all transactions) |
 | Owner address | `0x6aDb63B9dBaa1e6df2bA2D16bA6273aE916D429A` (public only -- no private key is stored in this repo) |
 
-## Status: working -- verified live on the real testnet
+## Status: working -- verified live on the real testnet, matches the local simulation's method coverage
 
 | | |
 |---|---|
 | Deployer (throwaway key, zero-gas, unfunded) | `0x16f57d43dA79DA9005DB73B1A91b23fdD225D23a` |
 | Consensus-only contract (`record_consensus_demo.py`) | `0x5E415aa5F5942f8341BBA1518EA9548F80C34891` -- 100/100 real tx sent, 79 finalized / 21 correctly rejected, 0 mismatches |
-| FL-integrated contract (`run_fl_with_onchain_poa2.py`) | `0xa169Cef457C355c6301bFd6c1a69Ed2C26e10B4a` -- 10/10 real FL training rounds anchored, trust mechanism genuinely excluded 2 injected malicious clients by round 4, 0 mismatches |
+| FL-integrated contract, PoA2 only (`run_fl_with_onchain_poa2.py`) | `0xa169Cef457C355c6301bFd6c1a69Ed2C26e10B4a` -- 10/10 real FL training rounds anchored, trust mechanism genuinely excluded 2 injected malicious clients by round 4, 0 mismatches |
+| **Full 8-method comparison contract (`run_full_ablation_onchain.py`)** | `0x4960bdE9A141ba6c55734Cb6035C49Db7Bb3900E` -- 71/71 real tx across all Table IX + XVI methods, 0 mismatches (see below) |
+
+Early on, only PoA2 had a real on-chain proof; vanilla FedAvg, Krum,
+Trimmed-Mean, Median, Authority-only, Association-only and Centralized
+existed only in the local simulation (`results/`). `run_full_ablation_onchain.py`
+closes that gap: it runs real BiLSTM training for **all eight** methods and
+anchors every one of their real per-round outcomes on-chain, so the
+robustness comparison isn't just simulated anymore.
+
+### Full 8-method comparison result (`run_full_ablation_onchain.py 10`)
+
+10 clients, 2 malicious (random-gradient-replacement attack), BiLSTM,
+WUSTL-IIoT-2021 (synthetic) -- 71 real transactions, 19.7s training + 158.2s
+anchoring, **0 verification mismatches** across every method:
+
+| Method | Final Accuracy | Rounds anchored |
+|---|---|---|
+| Centralized Learning | 95.18% | 1 |
+| Vanilla FL | **85.71%** (clearly weakest -- no defense) | 10 |
+| FL + PoA (only authority) | 98.04% | 10 |
+| FL + Association (only) | 98.57% | 10 |
+| FL + PoA2 (full) | 98.39% | 10 |
+| Krum | 97.32% | 10 |
+| Trimmed Mean | 98.57% | 10 |
+| Median | 97.86% | 10 |
+
+This matches the qualitative pattern from the local simulation
+(`results/robust_baselines_table.csv`, `results/ablation_table.csv`)
+closely: vanilla FedAvg is visibly the most vulnerable to the poisoning
+attack, and every defense mechanism -- trust-based or classical robust
+statistics -- recovers to within a couple of points of clean accuracy. The
+difference here is that every single one of these 71 data points is a real
+transaction on a real chain, individually verified against what was
+actually computed, not a number from a local run.
 
 The 100-transaction run (`python record_consensus_demo.py 100`) sent one
 real transaction per round with a randomized ~85%/15% valid/invalid block
@@ -72,11 +106,19 @@ tx nonce 2` on round 3. PureChain's block production is on-demand (not
 fixed-interval), and `eth_getTransactionCount(address, "latest")` can
 briefly lag behind a just-confirmed transaction on this kind of node,
 causing back-to-back transactions submitted within the same second to
-collide on nonces. Fixed with a short retry-with-backoff around each
-`record_consensus` call (`_record_with_retry` in `record_consensus_demo.py`)
-rather than anything more invasive -- the underlying PoA2 logic and contract
-were correct throughout; this was purely an RPC-timing issue. The retry
-logic held up at scale: the 100-transaction run hit this race 18 times and
+collide on nonces. The 8-method comparison run later surfaced a second
+symptom of the exact same race: `replacement transaction underpriced`
+(the node still sees the previous tx as pending and treats the new one as
+a same-nonce replacement -- since PureChain is always zero-gas, there's no
+fee bump that could ever satisfy a real replacement, so this is the same
+underlying timing issue wearing a different error message).
+
+Both are handled by a shared retry-with-backoff helper,
+`record_with_retry()` in `chain_utils.py` (used by all three on-chain
+scripts) -- not anything more invasive; the underlying PoA2 logic and
+contracts were correct throughout, this was purely an RPC-timing issue.
+The retry logic holds up at scale: across the 100-transaction run and the
+71-transaction 8-method comparison, it hit this race dozens of times and
 recovered cleanly every time (never exceeding 1-2 retries).
 
 ## Signing key handling
@@ -95,10 +137,10 @@ recovered cleanly every time (never exceeding 1-2 retries).
    needed since PureChain is zero-gas). Used automatically if no owner key
    file is present.
 
-`deploy_trust_ledger.py` and `record_consensus_demo.py` both print which
-key source they're using (owner vs. throwaway) and the resulting public
-address -- never the key itself -- and warn if an `owner_key.txt` doesn't
-actually correspond to the configured `OWNER_ADDRESS`.
+All scripts that send transactions print which key source they're using
+(owner vs. throwaway) and the resulting public address -- never the key
+itself -- and warn if an `owner_key.txt` doesn't actually correspond to
+the configured `OWNER_ADDRESS`.
 
 ## Scripts
 
@@ -112,11 +154,20 @@ actually correspond to the configured `OWNER_ADDRESS`.
 5. `python run_fl_with_onchain_poa2.py [n_rounds]` -- the FL-integrated
    version: runs real BiLSTM federated-learning rounds (the same
    `trustedge.simulation` engine as the local experiments in `results/`) on
-   WUSTL-IIoT-2021 with 20% malicious clients, then anchors each round's
-   REAL outcome (aggregated-model hash, whether enough clients were
-   admitted, admitted clients' mean trust score) on a freshly-deployed
-   TrustLedger instance. This is the genuine end-to-end demonstration --
-   script 4 only exercises the consensus math in isolation.
+   WUSTL-IIoT-2021 with 20% malicious clients under the "poa2" method only,
+   then anchors each round's REAL outcome (aggregated-model hash, whether
+   enough clients were admitted, admitted clients' mean trust score) on a
+   freshly-deployed TrustLedger instance.
+6. `python run_full_ablation_onchain.py [n_rounds]` -- the comprehensive
+   version: runs **all eight** aggregation methods (Centralized, Vanilla
+   FL, Authority-only, Association-only, PoA2, Krum, Trimmed Mean, Median)
+   for real, matching the local Table IX/XVI comparison, and anchors every
+   method's real per-round outcomes on one shared, freshly-deployed
+   contract (round IDs namespaced per method: `method_index*1000 + round`).
+   This is the one that actually closes the gap with the local simulation
+   -- scripts 4-5 only ever demonstrated a single method.
+- `chain_utils.py` -- the shared `record_with_retry()` helper (see "A
+  transient nonce race condition" above) used by scripts 4-6.
 
 ### Real FL + on-chain PoA2 result (`run_fl_with_onchain_poa2.py 10`)
 

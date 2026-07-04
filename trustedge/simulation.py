@@ -117,7 +117,10 @@ def run_fl_experiment(
         model = build_model(model_name, n_features, n_classes)
         train_local(model, np.concatenate(Xs), np.concatenate(ys), epochs=rounds, lr=lr, seed=seed)
         metrics = evaluate(model, X_test, y_test)
-        return {"accuracy_curve": [metrics["accuracy"]], "final_metrics": metrics, "logs": []}
+        return {
+            "accuracy_curve": [metrics["accuracy"]], "final_metrics": metrics, "logs": [],
+            "final_params": clone_params(model),
+        }
 
     global_model = build_model(model_name, n_features, n_classes)
     global_params = clone_params(global_model)

@@ -30,6 +30,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from chain_utils import record_with_retry
 from wallet import resolve_private_key
 
 HERE = Path(__file__).resolve().parent
@@ -38,20 +39,6 @@ FL_DEPLOYED_ADDRESS_FILE = HERE / "fl_deployed_address.txt"
 N_CLIENTS = 10
 MALICIOUS_FRACTION = 0.2  # matches run_robust_baselines.py (Table IX methodology)
 ASSOCIATION_THRESHOLD = 0.6  # tau_S, matches trustedge.poa2 default
-MAX_RETRIES = 5
-RETRY_DELAY_S = 3.0
-
-
-async def _record_with_retry(ledger, **kwargs):
-    for attempt in range(1, MAX_RETRIES + 1):
-        try:
-            return await ledger.record_consensus(**kwargs)
-        except Exception as e:
-            if "nonce too low" in str(e) and attempt < MAX_RETRIES:
-                print(f"  (nonce race, retrying in {RETRY_DELAY_S}s -- attempt {attempt}/{MAX_RETRIES})")
-                time.sleep(RETRY_DELAY_S)
-                continue
-            raise
 
 
 async def main(n_rounds: int) -> None:
@@ -109,7 +96,7 @@ async def main(n_rounds: int) -> None:
         association_ok = log.mean_trust >= ASSOCIATION_THRESHOLD
         expected[round_id] = authority_ok and association_ok
 
-        receipt = await _record_with_retry(
+        receipt = await record_with_retry(
             ledger,
             round=round_id,
             authority_ok=authority_ok,

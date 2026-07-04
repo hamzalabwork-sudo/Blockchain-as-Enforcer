@@ -16,9 +16,9 @@ Real (not simulated) integration with the live PureChain testnet, using the
 
 | | |
 |---|---|
-| Deployed TrustLedger contract | `0x5E415aa5F5942f8341BBA1518EA9548F80C34891` |
 | Deployer (throwaway key, zero-gas, unfunded) | `0x16f57d43dA79DA9005DB73B1A91b23fdD225D23a` |
-| Largest run | 100/100 real transactions sent, 79 finalized / 21 correctly rejected, 0 verification mismatches |
+| Consensus-only contract (`record_consensus_demo.py`) | `0x5E415aa5F5942f8341BBA1518EA9548F80C34891` -- 100/100 real tx sent, 79 finalized / 21 correctly rejected, 0 mismatches |
+| FL-integrated contract (`run_fl_with_onchain_poa2.py`) | `0xa169Cef457C355c6301bFd6c1a69Ed2C26e10B4a` -- 10/10 real FL training rounds anchored, trust mechanism genuinely excluded 2 injected malicious clients by round 4, 0 mismatches |
 
 The 100-transaction run (`python record_consensus_demo.py 100`) sent one
 real transaction per round with a randomized ~85%/15% valid/invalid block
@@ -106,6 +106,32 @@ actually correspond to the configured `OWNER_ADDRESS`.
 2. `python test_connection.py` -- read-only connectivity check, no key needed
 3. `python deploy_trust_ledger.py` -- deploys TrustLedger.sol, saves the address
 4. `python record_consensus_demo.py [n_rounds]` -- runs `n_rounds` real PoA2 rounds
-   (default 5) with a randomized ~85%/15% valid/invalid block mix, anchors
-   each on-chain, then reads every single one back and verifies it matches
-   exactly what was sent
+   using the *abstract* Validator/PoA2Consensus classes (no real ML training
+   behind them -- block validity is randomized), anchors each on-chain, then
+   reads every single one back and verifies it matches exactly what was sent
+5. `python run_fl_with_onchain_poa2.py [n_rounds]` -- the FL-integrated
+   version: runs real BiLSTM federated-learning rounds (the same
+   `trustedge.simulation` engine as the local experiments in `results/`) on
+   WUSTL-IIoT-2021 with 20% malicious clients, then anchors each round's
+   REAL outcome (aggregated-model hash, whether enough clients were
+   admitted, admitted clients' mean trust score) on a freshly-deployed
+   TrustLedger instance. This is the genuine end-to-end demonstration --
+   script 4 only exercises the consensus math in isolation.
+
+### Real FL + on-chain PoA2 result (`run_fl_with_onchain_poa2.py 10`)
+
+10 clients, 2 malicious (random-gradient-replacement attack), BiLSTM,
+WUSTL-IIoT-2021 (synthetic):
+
+| Round | Admitted | Mean trust (admitted) | Finalized |
+|---|---|---|---|
+| 1-3 | 10/10 | declining: 0.940 -> 0.898 -> 0.869 | True |
+| 4-10 | 8/10 | 1.000 | True |
+
+The trust-exclusion mechanism (Eq. 16's penalty decay + the Automatic
+Exclusion Rule) genuinely caught and excluded both malicious clients by
+round 4 -- this isn't scripted, it's the real `trustedge.trust`/`poa2`
+logic reacting to the real attack. Final accuracy: **0.9821**. All 10
+rounds anchored on contract `0xa169Cef457C355c6301bFd6c1a69Ed2C26e10B4a`
+(3.9s training + 26.0s anchoring, including 2 nonce-race retries) and
+verified with 0 mismatches against the actual training outcome.

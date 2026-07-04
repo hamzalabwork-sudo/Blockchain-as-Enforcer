@@ -16,6 +16,7 @@ Implements the ablation cells of Table XVI as four aggregation "modes":
 """
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -70,6 +71,9 @@ class RoundLog:
     accuracy: float
     flagged_ids: list[int]
     excluded_ids: list[int]
+    admitted_ids: list[int] = field(default_factory=list)
+    mean_trust: float = 1.0
+    model_hash: bytes = b""
 
 
 def run_fl_experiment(
@@ -211,7 +215,16 @@ def run_fl_experiment(
         load_flat_params(eval_model, global_params)
         acc = evaluate(eval_model, X_test, y_test)["accuracy"]
         accuracy_curve.append(acc)
-        logs.append(RoundLog(accuracy=acc, flagged_ids=flagged_ids, excluded_ids=excluded_ids))
+
+        admitted_ids = [c.client_id for c in clients if c.client_id not in excluded_ids]
+        admitted_trust = [c.trust.score for c in clients if c.client_id in admitted_ids]
+        mean_trust = float(np.mean(admitted_trust)) if admitted_trust else 0.0
+        model_hash = hashlib.sha256(global_params.tobytes()).digest()
+
+        logs.append(RoundLog(
+            accuracy=acc, flagged_ids=flagged_ids, excluded_ids=excluded_ids,
+            admitted_ids=admitted_ids, mean_trust=mean_trust, model_hash=model_hash,
+        ))
 
     final_model = build_model(model_name, n_features, n_classes)
     load_flat_params(final_model, global_params)
